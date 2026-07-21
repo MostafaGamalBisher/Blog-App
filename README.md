@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Project Name
+
+A brief one-sentence description of what this project does.
+
+## Live Demo
+
+[View Live →](https://your-project.vercel.app)
+
+## Screenshots
+
+<!-- Add screenshots here after the project is complete -->
+
+## Features
+
+- Feature one
+- Feature two
+- Feature three
+
+## Tech Stack
+
+- [Next.js 16](https://nextjs.org/) — App Router, Turbopack
+- [TypeScript](https://www.typescriptlang.org/) — strict mode
+- [Tailwind CSS v4](https://tailwindcss.com/) — CSS-first configuration
+- ESLint (flat config) + Prettier
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
+- [Node.js](https://nodejs.org/) v20.9.0 or higher
+
+### Installation
+
+\`\`\`bash
+
+# Clone the repository
+
+git clone https://github.com/your-username/project-name.git
+
+# Navigate into the project folder
+
+cd project-name
+
+# Install dependencies
+
+npm install
+\`\`\`
+
+### Development
+
+\`\`\`bash
+
+# Start the dev server with Turbopack
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+\`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+\`\`\`bash
+npm run build
+npm run start
+\`\`\`
 
-## Learn More
+### Code Quality
 
-To learn more about Next.js, take a look at the following resources:
+\`\`\`bash
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Run ESLint
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+npm run lint
 
-## Deploy on Vercel
+# Run Prettier
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+npm run format
+\`\`\`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+
+\`\`\`
+project-name/
+├── public/ ← static assets served directly
+├── src/
+│ └── app/
+│ ├── favicon.ico
+│ ├── globals.css ← Tailwind import + CSS custom properties
+│ ├── layout.tsx ← root layout, fonts, metadata
+│ └── page.tsx ← homepage
+├── .gitignore
+├── .prettierrc
+├── .prettierignore
+├── eslint.config.mjs
+├── next.config.ts
+├── postcss.config.mjs
+├── tsconfig.json
+└── package.json
+\`\`\`
+
+## Deployment
+
+This project deploys cleanly to [Vercel](https://vercel.com) — the platform built by the Next.js team, with zero configuration needed.
+
+## Author
+
+**Mostafa Gamal Bisher**
+
+- GitHub: [@MostafaGamalBisher](https://github.com/MostafaGamalBisher)
+- LinkedIn: [MostafaGamalBisher](https://linkedin.com/in/MostafaGamalBisher)
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
