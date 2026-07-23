@@ -5,8 +5,8 @@ const postsArray = Object.values(posts);
 
 const BlogListPage = () => {
   return (
-    <div>
-      <h2>the most recent Blogs</h2>
+    <div className="flex flex-col items-center justify-center">
+      <h2 className="font-extrabold">The most recent Blogs</h2>
       <PostsList posts={postsArray} />
     </div>
   );

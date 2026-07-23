@@ -7,7 +7,7 @@ interface PostsListProps {
 
 const PostsList = ({ posts }: PostsListProps) => {
   return (
-    <ul>
+    <ul className="flex flex-row gap-5">
       {posts.map((post) => (
         <PostCard key={post.slug} post={post} />
       ))}

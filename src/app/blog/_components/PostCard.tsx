@@ -6,7 +6,7 @@ interface PostCardProps {
 
 const PostCard = ({ post }: PostCardProps) => {
   return (
-    <li>
+    <li className="flex flex-col">
       <h3>{post.title}</h3>
       <p>{post.date.toDateString()}</p>
     </li>
