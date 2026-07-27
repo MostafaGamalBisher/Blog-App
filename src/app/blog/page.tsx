@@ -1,25 +1,25 @@
 import Link from 'next/link';
-import PostsList from './_components/PostsList';
-import posts from './posts';
+import BlogsList from '@/app/blog/_components/BlogsList';
+import Blogs from '@/app/api/blogs/blogs';
 
-interface BlogListPageProps {
+interface BlogsListPageProps {
   searchParams: Promise<{ category?: string }>;
 }
 
 export default async function BlogListPage({
   searchParams,
-}: BlogListPageProps) {
+}: BlogsListPageProps) {
   const { category } = await searchParams;
 
-  const postsArray = category
-    ? Object.values(posts).filter((post) => post.category === category)
-    : Object.values(posts);
+  const blogsArray = category
+    ? Object.values(Blogs).filter((blog) => blog.category === category)
+    : Object.values(Blogs);
 
   const categoriesArray = [
-    ...new Set(Object.values(posts).map((post) => post.category)),
+    ...new Set(Object.values(Blogs).map((blog) => blog.category)),
   ];
 
-  if (postsArray.length > 0) {
+  if (blogsArray.length > 0) {
     return (
       <div className="flex flex-col items-center justify-start">
         <h2 className="border-b p-4 font-extrabold">The most recent Blogs</h2>
@@ -40,7 +40,7 @@ export default async function BlogListPage({
             </li>
           ))}
         </ul>
-        <PostsList posts={postsArray} />
+        <BlogsList blogs={blogsArray} />
       </div>
     );
   } else {

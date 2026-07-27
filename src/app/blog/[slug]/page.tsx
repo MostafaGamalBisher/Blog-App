@@ -1,18 +1,18 @@
 import { notFound } from 'next/navigation';
-import PostCard from '../_components/PostCard';
-import posts from '../posts';
+import BlogCard from '@/app/blog/_components/BlogCard';
+import blogs from '@/app/api/blogs/blogs';
 
-interface BlogPostPageProps {
+interface BlogPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export default async function BlogPostPage({ params }: BlogPostPageProps) {
+export default async function BlogPage({ params }: BlogPageProps) {
   const { slug } = await params;
-  const post = posts[slug];
+  const blog = blogs[slug];
 
-  if (post === undefined) {
+  if (blog === undefined) {
     notFound();
   }
 
-  return <PostCard key={slug} post={post} />;
+  return <BlogCard key={slug} blog={blog} />;
 }

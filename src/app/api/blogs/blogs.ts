@@ -1,4 +1,4 @@
-export interface Post {
+export interface Blog {
   title: string;
   slug: string;
   date: Date;
@@ -6,21 +6,21 @@ export interface Post {
   category: string;
 }
 
-const posts: Record<string, Post> = {
-  'first-post': {
+const blogs: Record<string, Blog> = {
+  'first-blog': {
     title: 'typescript mastery',
-    slug: 'first-post',
+    slug: 'first-blog',
     date: new Date('2026-01-01'),
     content: 'we have started the new era of coding',
     category: 'typescript',
   },
-  'second-post': {
+  'second-blog': {
     title: 'nextjs mastery',
-    slug: 'second-post',
+    slug: 'second-blog',
     date: new Date('2026-01-02'),
     content: 'first frame work to master',
     category: 'nextjs',
   },
 };
 
-export default posts;
+export default blogs;
