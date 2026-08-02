@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 import BlogCard from '@/app/blog/_components/BlogCard';
+import { fetchData } from '@/app/blog/fetchData';
+import { RawData } from '@/app/api/blogs/blogs';
 
 interface BlogPageProps {
   params: Promise<{ slug: string }>;
@@ -8,17 +10,17 @@ interface BlogPageProps {
 export default async function BlogPage({ params }: BlogPageProps) {
   const { slug } = await params;
 
-  const response = await fetch(`${process.env.SITE_URL}/api/blogs/${slug}`);
+  const result = await fetchData<RawData>(
+    `${process.env.SITE_URL}/api/blogs/${slug}`
+  );
 
-  if (!response.ok) {
+  if (!result.ok) {
     notFound();
   }
 
-  const rowData = await response.json();
-
   const blog = {
-    ...rowData,
-    date: new Date(rowData.date),
+    ...result.data,
+    date: new Date(result.data.date),
   };
 
   return <BlogCard key={slug} blog={blog} />;

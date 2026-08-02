@@ -6,6 +6,14 @@ export interface Blog {
   category: string;
 }
 
+export interface RawData {
+  title: string;
+  slug: string;
+  date: string;
+  content: string;
+  category: string;
+}
+
 const blogs: Record<string, Blog> = {
   'first-blog': {
     title: 'typescript mastery',

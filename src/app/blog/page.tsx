@@ -1,21 +1,7 @@
 import Link from 'next/link';
 import BlogsList from '@/app/blog/_components/BlogsList';
-
-export interface Blog {
-  title: string;
-  slug: string;
-  date: Date;
-  content: string;
-  category: string;
-}
-
-export interface RowData {
-  title: string;
-  slug: string;
-  date: string;
-  content: string;
-  category: string;
-}
+import { fetchData } from '@/app/blog/fetchData';
+import { Blog, RawData } from '@/app/api/blogs/blogs';
 
 interface BlogsListPageProps {
   searchParams: Promise<{ category?: string }>;
@@ -26,15 +12,15 @@ export default async function BlogListPage({
 }: BlogsListPageProps) {
   const { category } = await searchParams;
 
-  const response = await fetch(`${process.env.SITE_URL}/api/blogs`);
+  const result = await fetchData<RawData[]>(
+    `${process.env.SITE_URL}/api/blogs`
+  );
 
-  if (!response.ok) {
+  if (!result.ok) {
     throw new Error(`Failed to fetch Blogs`);
   }
 
-  const rawData: RowData[] = await response.json();
-
-  const data: Blog[] = rawData.map((blog) => ({
+  const data: Blog[] = result.data.map((blog) => ({
     ...blog,
     date: new Date(blog.date),
   }));
