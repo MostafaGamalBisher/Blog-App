@@ -14,6 +14,11 @@ export interface RawData {
   category: string;
 }
 
+export interface fetchedRawData<T> {
+  data: T;
+  meta: { total: number; page: number; limit: number; hasNextPage: boolean };
+}
+
 const blogs: Record<string, Blog> = {
   'first-blog': {
     title: 'typescript mastery',
