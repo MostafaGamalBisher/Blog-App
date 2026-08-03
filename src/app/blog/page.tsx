@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import BlogsList from '@/app/blog/_components/BlogsList';
 import { fetchData } from '@/app/blog/fetchData';
-import { Blog, RawData } from '@/app/api/blogs/blogs';
+import { Blog, RawData, SentRawData } from '@/app/api/blogs/blogs';
 
 interface BlogsListPageProps {
   searchParams: Promise<{ category?: string }>;
@@ -12,26 +12,27 @@ export default async function BlogListPage({
 }: BlogsListPageProps) {
   const { category } = await searchParams;
 
-  const result = await fetchData<RawData[]>(
+  const result = await fetchData<SentRawData<RawData[]>>(
     `${process.env.SITE_URL}/api/blogs`
   );
 
   if (!result.ok) {
     throw new Error(`Failed to fetch Blogs`);
   }
+  const { data } = result.data;
 
-  const data: Blog[] = result.data.map((blog) => ({
+  const allBlogs: Blog[] = data.map((blog) => ({
     ...blog,
     date: new Date(blog.date),
   }));
 
-  const blogsArray = category
-    ? data.filter((blog) => blog.category === category)
-    : data;
+  const categorizedBlogs = category
+    ? allBlogs.filter((blog) => blog.category === category)
+    : allBlogs;
 
-  const categoriesArray = [...new Set(data.map((blog) => blog.category))];
+  const categoriesArray = [...new Set(allBlogs.map((blog) => blog.category))];
 
-  if (blogsArray.length > 0) {
+  if (categorizedBlogs.length > 0) {
     return (
       <div className="flex flex-col items-center justify-start">
         <h2 className="border-b p-4 font-extrabold">The most recent Blogs</h2>
@@ -52,7 +53,7 @@ export default async function BlogListPage({
             </li>
           ))}
         </ul>
-        <BlogsList blogs={blogsArray} />
+        <BlogsList blogs={categorizedBlogs} />
       </div>
     );
   } else {

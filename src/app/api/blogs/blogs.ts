@@ -14,7 +14,7 @@ export interface RawData {
   category: string;
 }
 
-export interface fetchedRawData<T> {
+export interface SentRawData<T> {
   data: T;
   meta: { total: number; page: number; limit: number; hasNextPage: boolean };
 }

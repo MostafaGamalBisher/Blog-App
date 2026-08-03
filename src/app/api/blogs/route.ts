@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import blogs from '@/app/api/blogs/blogs';
+import blogs, { Blog, SentRawData } from '@/app/api/blogs/blogs';
 
 export function GET(request: Request) {
   const url = new URL(request.url);
@@ -12,19 +12,19 @@ export function GET(request: Request) {
   const start = (pageNumber - 1) * pageLimit;
   const end = start + pageLimit;
 
-  const rowArray = Object.values(blogs);
+  const blogsArray = Object.values(blogs);
 
-  const totalArrayLength = rowArray.length
+  const blogsArrayLength = blogsArray.length;
 
-  const slicedArray = rowArray.slice(start,end)
+  const slicedBlogsArray = blogsArray.slice(start, end);
 
-  return NextResponse.json({
-  data: slicedArray,
-  meta: {
-    total: totalArrayLength,
-    page: pageNumber,
-    limit: pageLimit,
-    hasNextPage: /* ... */,
-  },
-});
+  return NextResponse.json<SentRawData<Blog[]>>({
+    data: slicedBlogsArray,
+    meta: {
+      total: blogsArrayLength,
+      page: pageNumber,
+      limit: pageLimit,
+      hasNextPage: end < blogsArrayLength,
+    },
+  });
 }
