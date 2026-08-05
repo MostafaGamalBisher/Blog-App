@@ -4,22 +4,24 @@ import { fetchData } from '@/app/blog/fetchData';
 import { Blog, RawData, SentRawData } from '@/app/api/blogs/blogs';
 
 interface BlogsListPageProps {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; page?: string }>;
 }
 
 export default async function BlogListPage({
   searchParams,
 }: BlogsListPageProps) {
-  const { category } = await searchParams;
+  const { category, page } = await searchParams;
+
+  const categoryQuery = category ? `&category=${category}` : '';
 
   const result = await fetchData<SentRawData<RawData[]>>(
-    `${process.env.SITE_URL}/api/blogs`
+    `${process.env.SITE_URL}/api/blogs?page=${page ?? '1'}&limit=10`
   );
 
   if (!result.ok) {
     throw new Error(`Failed to fetch Blogs`);
   }
-  const { data } = result.data;
+  const { data, meta } = result.data;
 
   const allBlogs: Blog[] = data.map((blog) => ({
     ...blog,
@@ -54,6 +56,10 @@ export default async function BlogListPage({
           ))}
         </ul>
         <BlogsList blogs={categorizedBlogs} />
+
+        <div>
+          <Link href={`/blog?page=${meta.page + 1}${categoryQuery}`}>Next</Link>
+        </div>
       </div>
     );
   } else {
