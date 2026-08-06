@@ -10,9 +10,7 @@ interface BlogPageProps {
 export default async function BlogPage({ params }: BlogPageProps) {
   const { slug } = await params;
 
-  const result = await fetchData<RawData>(
-    `${process.env.SITE_URL}/api/blogs/${slug}`
-  );
+  const result = await fetchData<RawData>(`/api/blogs/${slug}`);
 
   if (!result.ok) {
     notFound();

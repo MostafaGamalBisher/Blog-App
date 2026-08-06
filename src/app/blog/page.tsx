@@ -15,7 +15,7 @@ export default async function BlogListPage({
   const categoryQuery = category ? `&category=${category}` : '';
 
   const result = await fetchData<SentRawData<RawData[]>>(
-    `${process.env.SITE_URL}/api/blogs?page=${page ?? '1'}&limit=10`
+    `/api/blogs?page=${page ?? '1'}&limit=10`
   );
 
   if (!result.ok) {
