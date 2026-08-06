@@ -17,8 +17,7 @@ export function GET(request: Request) {
   const blogsArrayLength = blogsArray.length;
 
   const slicedBlogsArray = blogsArray.slice(start, end);
-  console.log('VERCEL_URL:', process.env.VERCEL_URL);
-  console.log('VERCEL_URL:', process.env.VERCEL_PROJECT_PRODUCTION_URL);
+
   return NextResponse.json<SentRawData<Blog[]>>({
     data: slicedBlogsArray,
     meta: {

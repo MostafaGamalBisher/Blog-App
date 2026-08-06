@@ -1,8 +1,8 @@
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
 export function getBaseUrl(): string {
-  if (process.env.VERCEL_URL) {
-    return 'https://' + process.env.VERCEL_URL;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL;
   } else {
     if (!process.env.SITE_URL) {
       throw new Error(`SITE_URL went wrong`);
