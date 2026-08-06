@@ -34,7 +34,16 @@ export default async function BlogListPage({
 
   const categoriesArray = [...new Set(allBlogs.map((blog) => blog.category))];
 
-  if (categorizedBlogs.length > 0) {
+  if (allBlogs.length === 0) {
+    return (
+      <div>
+        <p>No Blogs to render</p>
+        <Link href={`/blog`}>
+          <h3 className="text-white">All Blogs</h3>
+        </Link>
+      </div>
+    );
+  } else {
     return (
       <div className="flex flex-col items-center justify-start">
         <h2 className="border-b p-4 font-extrabold">The most recent Blogs</h2>
@@ -55,14 +64,31 @@ export default async function BlogListPage({
             </li>
           ))}
         </ul>
-        <BlogsList blogs={categorizedBlogs} />
+        {categorizedBlogs.length > 0 ? (
+          <BlogsList blogs={categorizedBlogs} />
+        ) : (
+          <p>
+            No Blogs in this category to render please choose another category
+          </p>
+        )}
 
         <div>
-          <Link href={`/blog?page=${meta.page + 1}${categoryQuery}`}>Next</Link>
+          {meta.page === 1 ? (
+            <p className="pointer-events-none opacity-50 select-none">prev</p>
+          ) : (
+            <Link href={`/blog?page=${meta.page - 1}${categoryQuery}`}>
+              Prev
+            </Link>
+          )}
+          {meta.hasNextPage ? (
+            <Link href={`/blog?page=${meta.page + 1}${categoryQuery}`}>
+              Next
+            </Link>
+          ) : (
+            <p className="pointer-events-none opacity-50 select-none">Next</p>
+          )}
         </div>
       </div>
     );
-  } else {
-    return <p>Can not find the matched category </p>;
   }
 }
