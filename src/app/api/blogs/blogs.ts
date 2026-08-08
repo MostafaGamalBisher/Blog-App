@@ -16,7 +16,7 @@ export interface RawData {
 
 export interface SentRawData<T> {
   data: T;
-  meta: { total: number; page: number; limit: number; hasNextPage: boolean };
+  meta?: { total: number; page: number; limit: number; hasNextPage: boolean };
 }
 
 const blogs: Record<string, Blog> = {

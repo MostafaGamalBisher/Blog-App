@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import BlogsList from '@/app/blog/_components/BlogsList';
-import { fetchData } from '@/app/blog/fetchData';
+import { fetchData } from '@/app/blog/utils/fetchData';
 import { Blog, RawData, SentRawData } from '@/app/api/blogs/blogs';
 
 interface BlogsListPageProps {
@@ -21,7 +21,12 @@ export default async function BlogListPage({
   if (!result.ok) {
     throw new Error(`Failed to fetch Blogs`);
   }
+
   const { data, meta } = result.data;
+
+  if (!meta) {
+    throw new Error(`meta data is not provided`);
+  }
 
   const allBlogs: Blog[] = data.map((blog) => ({
     ...blog,

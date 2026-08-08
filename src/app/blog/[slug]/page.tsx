@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import BlogCard from '@/app/blog/_components/BlogCard';
-import { fetchData } from '@/app/blog/fetchData';
+import { fetchData } from '@/app/blog/utils/fetchData';
 import { RawData } from '@/app/api/blogs/blogs';
 
 interface BlogPageProps {
