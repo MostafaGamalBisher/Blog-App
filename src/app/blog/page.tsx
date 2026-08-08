@@ -2,6 +2,7 @@ import Link from 'next/link';
 import BlogsList from '@/app/blog/_components/BlogsList';
 import { fetchData } from '@/app/blog/utils/fetchData';
 import { Blog, RawData, SentRawData } from '@/app/api/blogs/blogs';
+import { CategoriesList } from './_components/CategoriesList';
 
 interface BlogsListPageProps {
   searchParams: Promise<{ category?: string; page?: string }>;
@@ -93,6 +94,7 @@ export default async function BlogListPage({
             <p className="pointer-events-none opacity-50 select-none">Next</p>
           )}
         </div>
+        <CategoriesList></CategoriesList>
       </div>
     );
   }
