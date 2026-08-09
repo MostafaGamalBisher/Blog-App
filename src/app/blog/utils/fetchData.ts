@@ -1,6 +1,10 @@
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
 export function getBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    return '';
+  }
+
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL;
   } else {

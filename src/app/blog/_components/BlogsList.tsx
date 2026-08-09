@@ -8,7 +8,7 @@ interface BlogsListProps {
 
 const BlogsList = ({ blogs }: BlogsListProps) => {
   return (
-    <ul className="mt-4 flex flex-row gap-5 rounded-xl bg-blue-950 p-4">
+    <ul className="mt-4 grid grid-cols-3 gap-5 rounded-xl bg-blue-950 p-4">
       {blogs.map((blog) => (
         <li key={blog.slug}>
           <Link href={`/blog/${blog.slug}`}>

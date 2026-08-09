@@ -10,22 +10,34 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
 import { getCategoriesFn } from '@/app/blog/utils/getCategoriesFn';
 
-export function CategoriesList() {
-  const [selectedCategory, setSelectedCategory] = useState('');
+interface categoryPropsType {
+  categoryProps: string;
+}
 
+export function CategoriesList({ categoryProps }: categoryPropsType) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['categories'],
     queryFn: getCategoriesFn,
   });
 
+  const router = useRouter();
+
   if (error) {
     console.log(error);
   }
+
+  const categoryHandler = (selectedCategory: string) => {
+    if (selectedCategory === 'all categories') {
+      router.push(`/blog`);
+    } else {
+      router.push(`/blog?category=${selectedCategory}`);
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -36,14 +48,18 @@ export function CategoriesList() {
         <DropdownMenuGroup>
           <DropdownMenuLabel>Categories</DropdownMenuLabel>
           <DropdownMenuRadioGroup
-            value={selectedCategory}
-            onValueChange={setSelectedCategory}
+            value={categoryProps}
+            onValueChange={categoryHandler}
           >
             {isLoading && (
               <DropdownMenuRadioItem value="loading" disabled>
                 Loading...
               </DropdownMenuRadioItem>
             )}
+
+            <DropdownMenuRadioItem value="all categories">
+              all categories
+            </DropdownMenuRadioItem>
 
             {data?.map((category) => (
               <DropdownMenuRadioItem key={category} value={category}>

@@ -13,6 +13,8 @@ export default async function BlogListPage({
 }: BlogsListPageProps) {
   const { category, page } = await searchParams;
 
+  const categoryProps: string = category ?? 'all categories';
+
   const categoryQuery = category ? `&category=${category}` : '';
 
   const result = await fetchData<SentRawData<RawData[]>>(
@@ -38,8 +40,6 @@ export default async function BlogListPage({
     ? allBlogs.filter((blog) => blog.category === category)
     : allBlogs;
 
-  const categoriesArray = [...new Set(allBlogs.map((blog) => blog.category))];
-
   if (allBlogs.length === 0) {
     return (
       <div>
@@ -53,23 +53,8 @@ export default async function BlogListPage({
     return (
       <div className="flex flex-col items-center justify-start">
         <h2 className="border-b p-4 font-extrabold">The most recent Blogs</h2>
-        <ul className="m-4 flex flex-row items-center justify-center gap-4 rounded-2xl border-2 p-4">
-          <li className="m-4 rounded-2xl border-2 bg-blue-300 p-4 text-xl">
-            <Link href={`/blog`}>
-              <h3 className="text-black">All Blogs</h3>
-            </Link>
-          </li>
-          {categoriesArray.map((categoryName) => (
-            <li
-              key={categoryName}
-              className="m-4 rounded-2xl border-2 bg-blue-300 p-4 text-xl"
-            >
-              <Link href={`/blog?category=${categoryName}`}>
-                <h3 className="text-black">{categoryName}</h3>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <CategoriesList categoryProps={categoryProps} />
+
         {categorizedBlogs.length > 0 ? (
           <BlogsList blogs={categorizedBlogs} />
         ) : (
@@ -78,7 +63,7 @@ export default async function BlogListPage({
           </p>
         )}
 
-        <div>
+        <div className="flex gap-4">
           {meta.page === 1 ? (
             <p className="pointer-events-none opacity-50 select-none">prev</p>
           ) : (
@@ -94,7 +79,6 @@ export default async function BlogListPage({
             <p className="pointer-events-none opacity-50 select-none">Next</p>
           )}
         </div>
-        <CategoriesList></CategoriesList>
       </div>
     );
   }
