@@ -18,7 +18,7 @@ export default async function BlogListPage({
   const categoryQuery = category ? `&category=${category}` : '';
 
   const result = await fetchData<SentRawData<RawData[]>>(
-    `/api/blogs?page=${page ?? '1'}&limit=10`
+    `/api/blogs?page=${page ?? '1'}&limit=10${categoryQuery}`
   );
 
   if (!result.ok) {
@@ -36,10 +36,6 @@ export default async function BlogListPage({
     date: new Date(blog.date),
   }));
 
-  const categorizedBlogs = category
-    ? allBlogs.filter((blog) => blog.category === category)
-    : allBlogs;
-
   if (allBlogs.length === 0) {
     return (
       <div>
@@ -55,13 +51,7 @@ export default async function BlogListPage({
         <h2 className="border-b p-4 font-extrabold">The most recent Blogs</h2>
         <CategoriesList categoryProps={categoryProps} />
 
-        {categorizedBlogs.length > 0 ? (
-          <BlogsList blogs={categorizedBlogs} />
-        ) : (
-          <p>
-            No Blogs in this category to render please choose another category
-          </p>
-        )}
+        <BlogsList blogs={allBlogs} />
 
         <div className="flex gap-4">
           {meta.page === 1 ? (

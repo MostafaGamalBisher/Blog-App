@@ -28,7 +28,7 @@ export function CategoriesList({ categoryProps }: categoryPropsType) {
   const router = useRouter();
 
   if (error) {
-    console.log(error);
+    throw new Error();
   }
 
   const categoryHandler = (selectedCategory: string) => {

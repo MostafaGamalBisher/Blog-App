@@ -5,6 +5,7 @@ export function GET(request: Request) {
   const url = new URL(request.url);
   const page = url.searchParams.get('page');
   const limit = url.searchParams.get('limit');
+  const category = url.searchParams.get('category');
 
   const pageNumber = Number(page ?? '1');
   const pageLimit = Number(limit ?? '1');
@@ -14,9 +15,13 @@ export function GET(request: Request) {
 
   const blogsArray = Object.values(blogs);
 
-  const blogsArrayLength = blogsArray.length;
+  const filteredBlogsArray = category
+    ? blogsArray.filter((blog) => blog.category === category)
+    : blogsArray;
 
-  const slicedBlogsArray = blogsArray.slice(start, end);
+  const blogsArrayLength = filteredBlogsArray.length;
+
+  const slicedBlogsArray = filteredBlogsArray.slice(start, end);
 
   return NextResponse.json<SentRawData<Blog[]>>({
     data: slicedBlogsArray,
