@@ -1,0 +1,70 @@
+'use client';
+
+import Link from 'next/link';
+import { getBlogsFn } from '@/app/blog/utils/getBlogsFn';
+import { useQuery } from '@tanstack/react-query';
+import BlogsList from '@/app/blog/_components/BlogsList';
+
+interface PaginatedBlogsListProps {
+  page?: string;
+  category?: string;
+}
+
+export function PaginatedBlogsList({
+  page,
+  category,
+}: PaginatedBlogsListProps) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['blogs', { page, category }],
+    queryFn: () => getBlogsFn({ page, category }),
+  });
+
+  const categoryQuery = category ? `&category=${category}` : '';
+
+  if (isLoading) {
+    return <p>loading...</p>;
+  }
+
+  if (error) {
+    return <p>{error.message}</p>;
+  }
+
+  if (!data) {
+    throw new Error('no data found');
+  }
+
+  const allBlogs = data.data;
+  const meta = data.meta;
+
+  if (allBlogs.length === 0) {
+    return (
+      <div>
+        <p>No Blogs to render</p>
+        <Link href={`/blog`}>
+          <h3 className="text-white">All Blogs</h3>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <h2 className="border-b p-4 font-extrabold">The most recent Blogs</h2>
+
+      <BlogsList blogs={allBlogs} />
+
+      <div className="flex gap-4">
+        {meta.page === 1 ? (
+          <p className="pointer-events-none opacity-50 select-none">prev</p>
+        ) : (
+          <Link href={`/blog?page=${meta.page - 1}${categoryQuery}`}>Prev</Link>
+        )}
+        {meta.hasNextPage ? (
+          <Link href={`/blog?page=${meta.page + 1}${categoryQuery}`}>Next</Link>
+        ) : (
+          <p className="pointer-events-none opacity-50 select-none">Next</p>
+        )}
+      </div>
+    </>
+  );
+}
