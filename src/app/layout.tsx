@@ -1,12 +1,8 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Jura, Nunito } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/app/theme-provider';
-import { ThemeToggle } from '@/app/blog/ThemeToggle';
-import Image from 'next/image';
-import logo from '../../public/icons/logo.svg';
-import Link from 'next/link';
-import { House } from 'lucide-react';
+import { Header } from './blog/Header';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -15,6 +11,15 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
+
+const jura = Jura({
+  variable: '--font-jura',
+  subsets: ['latin'],
+});
+const nunito = Nunito({
+  variable: '--font-nunito',
   subsets: ['latin'],
 });
 
@@ -31,26 +36,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${jura.variable} ${nunito.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="m-2 flex items-center justify-between gap-1">
-            <Link href={'/'} className="flex items-center gap-1">
-              <Image src={logo} alt="app logo" className="dark:text-white" />
-              <span>Blog</span>
-            </Link>
-            <Link
-              className="text-primary flex transition-colors hover:text-blue-400"
-              href={'/'}
-            >
-              <House />
-              <span>Home</span>
-            </Link>
-            <ThemeToggle />
-          </div>
-
+          <Header />
           {children}
         </ThemeProvider>
       </body>
