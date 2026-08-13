@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getBlogsFn } from '@/app/blog/utils/getBlogsFn';
 import { useQuery } from '@tanstack/react-query';
 import BlogsList from '@/app/blog/_components/BlogsList';
+import { ArrowBigLeft, ArrowBigRight } from 'lucide-react';
 
 interface PaginatedBlogsListProps {
   page?: string;
@@ -55,14 +56,22 @@ export function PaginatedBlogsList({
 
       <div className="flex gap-4">
         {meta.page === 1 ? (
-          <p className="pointer-events-none opacity-50 select-none">prev</p>
+          <p className="pointer-events-none opacity-50 select-none">
+            <ArrowBigLeft />
+          </p>
         ) : (
-          <Link href={`/blog?page=${meta.page - 1}${categoryQuery}`}>Prev</Link>
+          <Link href={`/blog?page=${meta.page - 1}${categoryQuery}`}>
+            <ArrowBigLeft />
+          </Link>
         )}
         {meta.hasNextPage ? (
-          <Link href={`/blog?page=${meta.page + 1}${categoryQuery}`}>Next</Link>
+          <Link href={`/blog?page=${meta.page + 1}${categoryQuery}`}>
+            <ArrowBigRight />
+          </Link>
         ) : (
-          <p className="pointer-events-none opacity-50 select-none">Next</p>
+          <p className="pointer-events-none opacity-50 select-none">
+            <ArrowBigRight />
+          </p>
         )}
       </div>
     </>
