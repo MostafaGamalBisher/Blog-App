@@ -23,8 +23,13 @@ export function GET(request: Request) {
 
   const slicedBlogsArray = filteredBlogsArray.slice(start, end);
 
+  const slicedBlogsArrayWithImage = slicedBlogsArray.map((blog) => ({
+    ...blog,
+    image: `https://placehold.co/600x400.png?text=${blog.slug}`,
+  }));
+
   return NextResponse.json<SentRawData<Blog[]>>({
-    data: slicedBlogsArray,
+    data: slicedBlogsArrayWithImage,
     meta: {
       total: blogsArrayLength,
       page: pageNumber,

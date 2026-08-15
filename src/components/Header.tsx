@@ -1,8 +1,8 @@
 import { House } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ThemeToggle } from '@/app/blog/ThemeToggle';
-import logo from '../../../public/icons/logo.svg';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import logo from '../../public/icons/logo.svg';
 
 export function Header() {
   return (

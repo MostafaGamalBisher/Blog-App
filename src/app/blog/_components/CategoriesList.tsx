@@ -57,12 +57,19 @@ export function CategoriesList({ categoryProps }: categoryPropsType) {
               </DropdownMenuRadioItem>
             )}
 
-            <DropdownMenuRadioItem value="all categories">
+            <DropdownMenuRadioItem
+              className="font-heading text-xs"
+              value="all categories"
+            >
               all categories
             </DropdownMenuRadioItem>
 
             {data?.map((category) => (
-              <DropdownMenuRadioItem key={category} value={category}>
+              <DropdownMenuRadioItem
+                className="font-jura text-xs"
+                key={category}
+                value={category}
+              >
                 {category}
               </DropdownMenuRadioItem>
             ))}

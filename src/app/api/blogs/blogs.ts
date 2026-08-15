@@ -4,6 +4,7 @@ export interface Blog {
   date: Date;
   content: string;
   category: string;
+  image: string;
 }
 
 export interface RawData {
@@ -12,6 +13,7 @@ export interface RawData {
   date: string;
   content: string;
   category: string;
+  image: string;
 }
 
 export interface SentRawData<T> {
@@ -19,7 +21,9 @@ export interface SentRawData<T> {
   meta?: { total: number; page: number; limit: number; hasNextPage: boolean };
 }
 
-const blogs: Record<string, Blog> = {
+type BlogOmit = Omit<Blog, 'image'>;
+
+const blogs: Record<string, BlogOmit> = {
   'first-blog': {
     title: 'typescript mastery',
     slug: 'first-blog',
