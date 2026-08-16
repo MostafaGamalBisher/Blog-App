@@ -6,6 +6,7 @@ export function GET(request: Request) {
   const page = url.searchParams.get('page');
   const limit = url.searchParams.get('limit');
   const category = url.searchParams.get('category');
+  const search = url.searchParams.get('search')?.trim().toLowerCase();
 
   const pageNumber = Number(page ?? '1');
   const pageLimit = Number(limit ?? '1');
@@ -19,9 +20,17 @@ export function GET(request: Request) {
     ? blogsArray.filter((blog) => blog.category === category)
     : blogsArray;
 
-  const blogsArrayLength = filteredBlogsArray.length;
+  const searchedFilteredBlogsArray = search
+    ? filteredBlogsArray.filter(
+        (blog) =>
+          blog.title.toLowerCase().includes(search) ||
+          blog.content.toLowerCase().includes(search)
+      )
+    : filteredBlogsArray;
 
-  const slicedBlogsArray = filteredBlogsArray.slice(start, end);
+  const blogsArrayLength = searchedFilteredBlogsArray.length;
+
+  const slicedBlogsArray = searchedFilteredBlogsArray.slice(start, end);
 
   const slicedBlogsArrayWithImage = slicedBlogsArray.map((blog) => ({
     ...blog,

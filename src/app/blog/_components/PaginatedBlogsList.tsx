@@ -9,18 +9,21 @@ import { ArrowBigLeft, ArrowBigRight } from 'lucide-react';
 interface PaginatedBlogsListProps {
   page?: string;
   category?: string;
+  search?: string;
 }
 
 export function PaginatedBlogsList({
   page,
   category,
+  search,
 }: PaginatedBlogsListProps) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['blogs', { page, category }],
-    queryFn: () => getBlogsFn({ page, category }),
+    queryKey: ['blogs', { page, category, search }],
+    queryFn: () => getBlogsFn({ page, category, search }),
   });
 
   const categoryQuery = category ? `&category=${category}` : '';
+  const searchQuery = search ? `&search=${search}` : '';
 
   if (isLoading) {
     return <p>loading...</p>;
@@ -60,12 +63,16 @@ export function PaginatedBlogsList({
             <ArrowBigLeft />
           </p>
         ) : (
-          <Link href={`/blog?page=${meta.page - 1}${categoryQuery}`}>
+          <Link
+            href={`/blog?page=${meta.page - 1}${categoryQuery}${searchQuery}`}
+          >
             <ArrowBigLeft />
           </Link>
         )}
         {meta.hasNextPage ? (
-          <Link href={`/blog?page=${meta.page + 1}${categoryQuery}`}>
+          <Link
+            href={`/blog?page=${meta.page + 1}${categoryQuery}${searchQuery}`}
+          >
             <ArrowBigRight />
           </Link>
         ) : (

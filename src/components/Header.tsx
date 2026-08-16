@@ -1,14 +1,14 @@
-import { House } from 'lucide-react';
-import Image from 'next/image';
+import { House, PenTool } from 'lucide-react';
+
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import logo from '../../public/icons/logo.svg';
 
 export function Header() {
   return (
     <div className="m-2 flex items-center justify-between gap-1 rounded-xl border p-2">
       <Link href={'/'} className="flex items-center gap-1">
-        <Image src={logo} alt="app logo" className="dark:text-white" />
+        <PenTool />
+
         <span>Blog</span>
       </Link>
       <Link

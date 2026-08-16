@@ -4,13 +4,14 @@ import { fetchData } from '@/app/blog/utils/fetchData';
 interface urlVariables {
   page?: string;
   category?: string;
+  search?: string;
 }
 
-export async function getBlogsFn({ page, category }: urlVariables) {
+export async function getBlogsFn({ page, category, search }: urlVariables) {
   const categoryQuery = category ? `&category=${category}` : '';
-
+  const searchQuery = search ? `&search=${search}` : '';
   const result = await fetchData<SentRawData<RawData[]>>(
-    `/api/blogs?page=${page ?? '1'}&limit=10${categoryQuery}`
+    `/api/blogs?page=${page ?? '1'}&limit=10${categoryQuery}${searchQuery}`
   );
 
   if (!result.ok) {
