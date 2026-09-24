@@ -6,6 +6,8 @@ Branch: `claude/repo-code-review-nv48oi`
 
 This report records what was changed, why, and how it was verified. Each item points back to the problem it fixes. The commit that adds this report is named in the chat reply, because a commit cannot contain its own hash.
 
+Sections 1–7 are the original round, kept unchanged as the historical record. **A follow-up round, done after GPT's review of `03f9e88`, is at the end of this file** ("Follow-up round"). Where the two disagree, the follow-up section is current.
+
 ---
 
 ## 1. Summary
@@ -349,8 +351,152 @@ In the long browser run, one check reported that rapid typing added 0 history en
 
 ### Optional follow-ups (deferred, see §6 of the checklist)
 
-- Skip TanStack Query retries for HTTP 4xx responses. Retrying a request the server has rejected can't succeed.
+- Skip TanStack Query retries for HTTP 4xx responses. Retrying a request the server has rejected can't succeed. *(Done for HTTP 400 in the follow-up round.)*
 - Keep previous data during uncached page changes, with a visible pending state.
 - Server prefetching/hydration for the list's first render.
 - Metadata, semantic `header`/`nav`, the brand link destination, the default page size.
 - Rename `categoryProps` / `categoryPropsType` and share the `'all categories'` string between `page.tsx` and `CategoriesList.tsx`.
+
+---
+
+# Follow-up round (after GPT review of `03f9e88`)
+
+Handoff: `BLOG_APP_FOLLOWUP_FIXES.md`
+Reviewed commit and starting point: `03f9e8867fd4b3bd7825b2c3e965c16e8c91f236`. The remote branch was identical, and the working tree was clean.
+
+GPT accepted the main implementation and raised two findings, established by executing the helpers. Both were reproduced in a real browser before being fixed.
+
+## F1. Findings, reproduced in the browser
+
+All reproductions ran in Chromium against a production build of `03f9e88`.
+
+| Finding | Browser result on `03f9e88` |
+|---|---|
+| **1. Pending typing survives navigation that keeps the same search.** At `?search=e&page=2`, type `generics`, press Back before the debounce. | URL ended at `?search=generics`, input `generics`: the superseded draft was committed and page 2 was lost. |
+| Same, with category: at `?search=e&category=css`, type `grid`, press Back. | URL ended at `?search=grid`. |
+| Reset during pending typing, committed search **empty** (`?category=no-such-category`, type `abc`, click "All Blogs"). | `abc` committed after the reset (browser test failed on `03f9e88`). |
+| **2. Repeated `/blog` parameters.** `/blog?search=css&search=nextjs` | Input showed `css`; API request had `search=css,nextjs`, one comma-joined value. |
+| `/blog?search=css&search=css`, `?category=css&category=nextjs` | API received `css,css` and `css,nextjs`. |
+| `/blog?page=1&page=2`, `/blog?page=abc` | API received `page=1,2` and `page=abc` → 400, retried. |
+| **3. Retries (related improvement).** `/blog?page=abc` | 4 identical requests; "Couldn't load blogs." appeared after 7.4 s. |
+
+**Additional finding from the browser tests.** With page-data requests delayed by 800 ms (a simulated slow network), a debounce that was pending when the user chose a category or clicked a link could fire while that navigation was still loading. Its later push then replaced the destination: the category or page was lost, or "All Blogs" did not reset. This was reproduced on `03f9e88`, and in an intermediate version of this fix that lacked the cancellation described below.
+
+## F2. Corrections
+
+### Navigation policy (finding 1)
+
+`src/lib/blogs/searchSync.ts`, `src/app/blog/_components/SearchBar.tsx`, `SearchDraftContext.tsx`, `CategoriesList.tsx`
+
+1. **URL identity is the whole query string** (`searchParams.toString()`), not the search text. `SearchSyncState` is now `{ draft, syncedQuery, pendingQuery }`.
+2. **SearchBar's own commit:** before navigating, SearchBar records the exact query string it navigates to (`pendingQuery`). When the URL arrives at that query string, the draft is kept, so typing done while the navigation was in flight is not lost. `pendingQuery` is cleared on the next URL change of any kind, so a stale value can't claim a later navigation.
+3. **Any other URL change** (Back, Forward, "All Blogs", pagination, category, links) replaces the draft with the URL value. Pending typing is discarded even when the committed search text is identical.
+4. **Explicit category selection keeps the typed text.** `CategoriesList` takes the current draft through `SearchDraftContext` (`takeDraft()`), puts it in the category navigation's URL, and cancels the pending commit. So "type, then quickly choose a category" still gives `?category=css&search=grid`, and category changes are not treated like Back/Forward. The context holds a ref, because the draft is only read when a category is clicked.
+5. **Link clicks cancel the pending commit.** This is a capture-phase `click` listener for plain left-clicks on `a[href]`; modifier or middle clicks that open a new tab are ignored. It prevents the slow-network race above.
+6. **No `popstate` handling was added.** I tested a `popstate` listener that cancels the timer, and removed it because it made no difference. The Back/Forward tests, including the 800 ms slow-network variant, passed without it in 15 of 15 runs. An observation showed that Back sends one page-data request, yet the test still passes with that request delayed. From those two results I infer that the router applies the restored URL immediately, before the 300 ms timer.
+7. **Unchanged:** the 300 ms debounce and the push/replace history policy (start or clear a search = push; refine = replace).
+
+### Repeated-parameter policy (finding 2)
+
+`src/lib/blogs/queryParams.ts`, `src/lib/blogs/pageParams.ts`, `src/app/blog/page.tsx`, `src/app/api/blogs/listQuery.ts`
+
+- **Page types match reality.** `page.tsx` types `searchParams` as `Record<string, string | string[] | undefined>`, and `parseBlogPageParams` validates it before anything reaches components, query keys or URL builders. Nothing is cast, and nothing is comma-joined.
+- **Same rules as the API.** The per-parameter rules are now shared in `queryParams.ts`, and `listQuery.ts` was refactored to use them. Its behaviour is unchanged, and all existing API tests still pass.
+
+| `/blog` input | Result |
+|---|---|
+| Repeated `search`, `category` or `page`, including identical values | Invalid |
+| `page` not a plain positive integer (`abc`, `0`, empty, unsafe) | Invalid |
+| Absent `page` | Page 1 |
+| Absent or empty `search`/`category` | No filter |
+| Single value, e.g. `?search=a%2Cb` or raw `?search=a,b` | Kept literally (`a,b`); also `+`, `&`, `#`, Arabic |
+| Other parameters | Ignored |
+
+- **Invalid state:** the page shows "This link has invalid filters" and the reason (e.g. "search must not be repeated."), plus a **Show all blogs** link to `/blog`. The search box, category menu and list are not rendered, and no API request is made.
+- **Why reject rather than canonicalise:** it matches the API's rejection policy. It also avoids silently choosing one of two conflicting values, which is what made the input and the request disagree.
+
+### Validation-error retries (item 3, implemented)
+
+`shouldRetryQuery` in `src/app/blog/utils/fetchData.ts`, wired in `src/app/providers.tsx` as the QueryClient default:
+
+- It reads the structured `cause` preserved by the adapters, not the message text.
+- **HTTP 400:** no retry.
+- **Everything else**, including network errors, parse errors, 5xx, **408** and **429**: up to 3 retries, which is TanStack Query's default.
+
+## F3. Tests
+
+### Unit tests (Vitest, `npm test`): 140 tests in 9 files, up from 105 in 7
+
+- **`searchSync.test.ts`** (rewritten):
+  - Back to the same search with a different page
+  - A category-only change
+  - Reset when the committed search was empty
+  - SearchBar's own navigation arriving
+  - Forward to a previously pushed URL
+  - A stale pending URL
+- **`pageParams.test.ts`, `queryParams.test.ts`** (new):
+  - Absent, empty and single values
+  - Literal comma, `+`, `&`, `#`, Arabic
+  - Repeated values, including identical ones
+  - Malformed pages
+- **`fetchData.test.ts`:** `shouldRetryQuery` for 400; network, 500, 408, 429 and parse errors; no cause; message text that mentions 400.
+- **Mutation check:** comparing only the search text again, and retrying 400, made 4 of these tests fail; restoring the code made them pass.
+
+### Browser tests (Playwright, committed): `npm run test:e2e`
+
+- **Setup:** `playwright.config.ts` builds and starts the **production** app (`npm run build && npm run start -- --port 3100`) and runs Chromium with one worker. The first time on a machine, run `npx playwright install chromium`.
+- **`e2e/search-history.spec.ts`:**
+  - Back/Forward with pending typing (same search, different page or category)
+  - Back on a slow network
+  - Reset during pending typing, with an empty and with a non-empty committed search
+  - Slow-network reset and pagination
+  - Rapid typing (one history entry)
+  - Typing during an in-flight navigation
+  - Category selection during typing, normal and on a slow network
+  - "all categories" keeping the search
+  - A Back/Forward journey checking URL, input and active category at each step
+  - Literal search text (URL and API request)
+- **`e2e/url-params.spec.ts`:**
+  - 8 invalid URLs: repeated search, category and page, identical repeats, `page=abc`, `page=0`. Each shows the message, renders no search box, makes no API request, and "Show all blogs" leads to the working list.
+  - 11 valid URLs: absent, empty, single, literal comma, `+`, `&`, `#`, Arabic. The input, the API request (exactly one `search` value, no stray `category`) and the card count all agree, and the URL is not rewritten.
+  - Direct API duplicates return 400.
+  - A 400 is shown without retrying (1 request, under 2.5 s).
+  - A transient 503 recovers after 2 retries.
+  - "Try again" works after the retries run out.
+
+### Results
+
+| Command | Result |
+|---|---|
+| `npm test` | 9 files, **140 passed** |
+| `npm run lint` | Pass (0 problems) |
+| `npx tsc --noEmit` | Pass |
+| `npm run build` | Pass; route table unchanged |
+| `npm run test:e2e -- --repeat-each 2` (production build) | **90 passed** (45 tests × 2), 0 flaky |
+| Same browser suite run against a production build of `03f9e88` | **17 of 45 failed**, exactly the tests for these findings plus the slow-network race; all 28 others passed |
+| Slow-network category test with the `takeDraft` cancellation removed | Failed 3 of 3 |
+| Slow-network reset/pagination tests before the link-click cancellation was added | Failed 4 of 4 |
+| Each follow-up commit on its own (`tsc`, `eslint`, `vitest`) | Pass |
+
+## F4. Follow-up commits
+
+| Commit | Summary |
+|---|---|
+| `88ee823` | fix: validate repeated and malformed /blog URL parameters |
+| `4485aa3` | fix: discard superseded search drafts even when the search text is unchanged |
+| `7a08e6b` | fix: do not retry HTTP 400 validation failures |
+| `4b885cd` | test: add Playwright browser tests for search history and URL parameters |
+| (next) | docs: README, CLAUDE.md and this follow-up section. Its hash is in the chat reply. |
+
+**Lockfile:** it only adds `@playwright/test`, `playwright`, `playwright-core` and `fsevents` (optional). The install was done with npm 11, like the previous one, because npm 10 strips the `libc` fields npm 11 wrote. A clean `npm ci` with npm 10 works.
+
+## F5. Remaining limitations
+
+- **No Vercel preview deployment was verified**, in either round.
+- **A link to the page you're already on keeps unsent typing.** Link clicks cancel the pending commit. If a link leads to the URL you're already on, the URL doesn't change, so the typed text stays in the box uncommitted until you type again. No current link does this.
+- **Browser-test log noise.** In this sandbox, `placehold.co` images return 403 through the network proxy, so the web-server output is noisy. The tests don't depend on images.
+- **Unchanged from the first round:**
+  - Streamed not-found pages return HTTP 200 with `noindex`.
+  - 7 pre-existing `npm audit` advisories.
+  - The optional items still deferred: previous-data transitions, server prefetching, naming, semantics.
+- **Process cleanup note:** some cleanup commands used `pgrep -x next-server`, which doesn't match the process name `next-server (v16.2.10)`. One stale server from this round's reproduction step survived until it was found and stopped. The committed browser runs weren't affected: they used fresh ports (3100 and 3110), and Playwright refuses to start its web server on a port that's already in use.

@@ -10,6 +10,7 @@ npm run build    # Production build
 npm run start    # Run production build
 npm run lint     # ESLint (flat config, eslint.config.mjs)
 npm test         # Vitest (vitest.config.mts): unit + route-handler tests, src/**/*.test.ts
+npm run test:e2e # Playwright (playwright.config.ts): browser tests in e2e/, builds + starts prod on :3100
 npm run format   # Prettier --write . (uses prettier-plugin-tailwindcss for class sorting)
 ```
 
@@ -34,11 +35,13 @@ src/app/api/categories/route.ts    GET /api/categories    -> ListResponse<string
 src/lib/blogs/types.ts             Blog, StoredBlog, RawData, response contracts (shared)
 src/lib/blogs/guards.ts            runtime checks for API JSON (shared)
 src/lib/blogs/urls.ts              URLSearchParams-based builders for /blog and /api/blogs URLs
-src/lib/blogs/searchSync.ts        SearchBar rules: URL vs typed draft, push/replace policy
+src/lib/blogs/searchSync.ts        SearchBar rules: URL (whole query string) vs typed draft, push/replace policy
+src/lib/blogs/queryParams.ts       per-parameter rules shared by the API and the /blog page
+src/lib/blogs/pageParams.ts        validates /blog searchParams (repeats -> invalid, page must be a positive integer)
 
 src/app/blog/utils/fetchData.ts    browser-only fetch -> Result (network | http | parse failures)
 src/app/blog/utils/get*Fn.ts       TanStack Query adapters: validate shape, throw Error with cause
-src/app/blog/page.tsx              list page: reads searchParams, renders CategoriesList, SearchBar, PaginatedBlogsList
+src/app/blog/page.tsx              list page: validates searchParams (invalid -> error + reset link), renders CategoriesList, SearchBar, PaginatedBlogsList inside SearchDraftProvider
 src/app/blog/[slug]/page.tsx       detail page: getBlogBySlug() directly, notFound() when null
 src/app/blog/[slug]/not-found.tsx  custom 404 UI for the [slug] segment
 src/app/blog/loading.tsx           route-level loading UI (makes /blog/* responses stream)
@@ -54,9 +57,9 @@ Type shapes for a blog, and the boundary between them:
 
 Server code works with `Blog`. Client adapters receive `unknown` JSON, check it with the guards, then map `date: new Date(blog.date)` before handing data to components typed against `Blog`. When adding blog fields, update the type, the guard and the store together.
 
-URL rules: build every `/blog` or `/api/blogs` URL with the helpers in `src/lib/blogs/urls.ts` (never string-interpolate query values). The URL is the source of truth for search/category/page; changing a filter keeps the other filter and resets the page.
+URL rules: build every `/blog` or `/api/blogs` URL with the helpers in `src/lib/blogs/urls.ts` (never string-interpolate query values). The URL is the source of truth for search/category/page; changing a filter keeps the other filter and resets the page. `/blog` searchParams can be `string[]` when repeated: always go through `parseBlogPageParams`, never cast. SearchBar treats any URL change it did not make (compared by whole query string) as superseding the typed draft; a category selection carries the draft via `SearchDraftContext`; link clicks cancel a pending commit.
 
-Error policy: a missing blog -> `notFound()`; thrown server errors -> `error.tsx`; a failed list query -> inline message with retry; a failed category query -> retry item inside the menu. `fetchData` returns failures as values; the adapters throw for TanStack Query and keep the failure as `cause`.
+Error policy: a missing blog -> `notFound()`; thrown server errors -> `error.tsx`; an invalid `/blog` URL -> "invalid filters" message with a reset link; a failed list query -> inline message with retry; a failed category query -> retry item inside the menu. `fetchData` returns failures as values; the adapters throw for TanStack Query and keep the failure as `cause`. Queries retry up to 3 times except for HTTP 400 (`shouldRetryQuery`).
 
 ## Conventions
 

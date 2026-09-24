@@ -77,10 +77,27 @@ The blog detail page remains a Server Component deliberately: article content be
 
 ### URL state and search
 
-The URL is the source of truth for the committed search, category and page. `SearchBar` keeps a local draft of what is being typed and commits it to the URL 300 ms after typing stops. When the URL changes for any other reason (Back/Forward, the "All Blogs" reset, a link), the draft is replaced by the URL value and any pending commit is cancelled, so an old draft can never be written back. History policy: starting or clearing a search adds a history entry; refining an existing search replaces the current entry, so Back does not step through every partly typed word. The rules are in `src/lib/blogs/searchSync.ts`.
+The URL is the source of truth for the committed search, category and page. `SearchBar` keeps a local draft of what is being typed and commits it to the URL 300 ms after typing stops.
 
-- Changing the category keeps the search and returns to page 1; "all categories" removes only the category.
+Navigation policy (rules in `src/lib/blogs/searchSync.ts`):
+
+- URL changes are recognised by the **whole query string**, not only the search text. Going Back from `?search=e&page=2` to `?search=e` is still a navigation even though the search is unchanged.
+- When the URL changes because of `SearchBar`'s own commit, the draft is kept, so letters typed while that navigation is in flight are not lost.
+- Any other URL change (Back/Forward, the "All Blogs" reset, pagination, a link) replaces the draft with the URL value, so text that was still waiting for the debounce is discarded, never committed later.
+- Clicking a link cancels a pending commit immediately, so on a slow network the debounce cannot fire while the link's navigation is still loading and override it.
+- Choosing a category applies the text currently in the search box (committed or not) together with the category, and returns to page 1. "all categories" removes only the category. The category menu reads the draft through `SearchDraftContext`.
 - The empty-results "All Blogs" link resets everything (search, category, page).
+- History: starting or clearing a search adds a history entry; refining an existing search replaces the current entry, so Back does not step through every partly typed word.
+
+### `/blog` URL validation
+
+`src/app/blog/page.tsx` validates its URL (`src/lib/blogs/pageParams.ts`) before anything reaches components, query keys or URL builders, using the same per-parameter rules as the API (`src/lib/blogs/queryParams.ts`):
+
+- A repeated `search`, `category` or `page` (even with identical values, e.g. `?search=a&search=a`) is invalid.
+- `page` must be a plain positive integer (`?page=abc`, `?page=0` and `?page=` are invalid).
+- Absent or empty `search`/`category` means no filter. Single values are kept literally: `?search=a%2Cb` searches for `a,b`, and `+`, `&`, `#` and non-Latin text stay as typed.
+
+An invalid URL shows "This link has invalid filters" with the reason and a **Show all blogs** link to `/blog`; no data request is made.
 
 ### Error handling
 
@@ -92,6 +109,9 @@ Each failure is shown at the scope it affects:
 | Server error while rendering a page | `error.tsx` (message hidden in production) |
 | Blog list request fails | Inline message with **Try again** and **Show all blogs** |
 | Category list request fails | Retry item inside the category menu; the rest of the page keeps working |
+| Invalid `/blog` URL (repeated or malformed parameter) | "This link has invalid filters" with **Show all blogs** |
+
+Retries: TanStack Query retries a failed request up to 3 times, except an HTTP `400`. A 400 means validation rejected the request, so the error is shown at once instead of after about 7 seconds of identical doomed requests. Other statuses, including `408` and `429`, and network errors keep the retries (`shouldRetryQuery` in `fetchData.ts`, which reads the structured error `cause`, not the message).
 
 `fetchData` (browser only) returns every expected failure as a `Result` instead of throwing, labelled `network`, `http` (with status and the API's error message) or `parse`. The query adapters (`getBlogsFn`, `getCategoriesFn`) turn a failure into a thrown `Error` for TanStack Query and keep the original failure as the error's `cause`.
 
@@ -142,6 +162,8 @@ src/
 │       ├── types.ts               # Blog, RawData, response contracts
 │       ├── guards.ts              # runtime checks for API JSON
 │       ├── urls.ts                # URLSearchParams-based URL builders
+│       ├── queryParams.ts         # parameter rules shared by API and page
+│       ├── pageParams.ts          # /blog URL validation
 │       └── searchSync.ts          # SearchBar URL/draft rules
 └── server/
     └── blogs/                     # server-only
@@ -150,7 +172,7 @@ src/
         └── data.ts                # data-access functions
 ```
 
-Tests sit next to the code they cover (`*.test.ts`).
+Unit tests sit next to the code they cover (`*.test.ts`). Browser tests are in `e2e/` (`playwright.config.ts`).
 
 ---
 
@@ -174,7 +196,10 @@ Checks:
 ```bash
 npm run lint
 npm test          # Vitest unit and route-handler tests
+npm run test:e2e  # Playwright browser tests (e2e/); builds and starts the production app on port 3100
 ```
+
+Before the first browser-test run on a machine: `npx playwright install chromium`. Set `E2E_PORT` to use another port.
 
 ---
 
