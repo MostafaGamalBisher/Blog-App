@@ -5,6 +5,8 @@ import { getBlogsFn } from '@/app/blog/utils/getBlogsFn';
 import { useQuery } from '@tanstack/react-query';
 import BlogsList from '@/app/blog/_components/BlogsList';
 import { ArrowBigLeft, ArrowBigRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { blogListHref } from '@/lib/blogs/urls';
 
 interface PaginatedBlogsListProps {
   page?: string;
@@ -17,24 +19,33 @@ export function PaginatedBlogsList({
   category,
   search,
 }: PaginatedBlogsListProps) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isPending, isError, isFetching, refetch } = useQuery({
     queryKey: ['blogs', { page, category, search }],
     queryFn: () => getBlogsFn({ page, category, search }),
   });
 
-  const categoryQuery = category ? `&category=${category}` : '';
-  const searchQuery = search ? `&search=${search}` : '';
-
-  if (isLoading) {
+  if (isPending) {
     return <p>loading...</p>;
   }
 
-  if (error) {
-    return <p>{error.message}</p>;
-  }
-
-  if (!data) {
-    throw new Error('no data found');
+  // Failure details stay on the query's error object; users get a plain
+  // message, a retry, and a way back to the unfiltered list.
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center gap-2 p-4">
+        <p>Couldn&apos;t load blogs.</p>
+        <Button
+          variant="outline"
+          disabled={isFetching}
+          onClick={() => refetch()}
+        >
+          Try again
+        </Button>
+        <Link className="text-primary underline" href={blogListHref({})}>
+          Show all blogs
+        </Link>
+      </div>
+    );
   }
 
   const allBlogs = data.data;
@@ -44,8 +55,9 @@ export function PaginatedBlogsList({
     return (
       <div>
         <p>No Blogs to render</p>
-        <Link href={`/blog`}>
-          <h3 className="text-white">All Blogs</h3>
+        {/* Resets everything: clears search and category, back to page 1. */}
+        <Link href={blogListHref({})}>
+          <h3 className="text-primary">All Blogs</h3>
         </Link>
       </div>
     );
@@ -63,16 +75,12 @@ export function PaginatedBlogsList({
             <ArrowBigLeft />
           </p>
         ) : (
-          <Link
-            href={`/blog?page=${meta.page - 1}${categoryQuery}${searchQuery}`}
-          >
+          <Link href={blogListHref({ category, search, page: meta.page - 1 })}>
             <ArrowBigLeft />
           </Link>
         )}
         {meta.hasNextPage ? (
-          <Link
-            href={`/blog?page=${meta.page + 1}${categoryQuery}${searchQuery}`}
-          >
+          <Link href={blogListHref({ category, search, page: meta.page + 1 })}>
             <ArrowBigRight />
           </Link>
         ) : (
