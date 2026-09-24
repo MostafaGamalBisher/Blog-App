@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Blog } from '@/app/api/blogs/blogs';
+import type { Blog } from '@/lib/blogs/types';
 import BlogCard from '@/app/blog/_components/BlogCard';
 
 interface BlogsListProps {

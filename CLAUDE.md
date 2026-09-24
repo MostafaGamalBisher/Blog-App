@@ -9,50 +9,65 @@ npm run dev      # Start dev server (Turbopack) at http://localhost:3000
 npm run build    # Production build
 npm run start    # Run production build
 npm run lint     # ESLint (flat config, eslint.config.mjs)
+npm test         # Vitest (vitest.config.mts): unit + route-handler tests, src/**/*.test.ts
+npm run test:e2e # Playwright (playwright.config.ts): browser tests in e2e/, builds + starts prod on :3100
 npm run format   # Prettier --write . (uses prettier-plugin-tailwindcss for class sorting)
 ```
 
-There is no test runner configured in this repo yet.
-
 ### Environment
 
-Copy `.env.example` to `.env.local` and fill in values. `SITE_URL` (e.g. `http://localhost:3000`) is required — server components build absolute fetch URLs from it when calling the internal API routes (Next.js server-side `fetch` needs a full URL, relative paths don't work).
+No environment variables are required. Server Components read data directly (no HTTP call to the app's own API), and browser requests use relative `/api/...` paths, so there is no base URL to configure.
 
 ## Architecture
 
-This is a Next.js 16 App Router blog app. The defining pattern is that pages **do not read data directly** — they call the app's own internal API routes over HTTP, even though everything runs in the same Next.js server.
+Next.js 16 App Router blog app. Data lives in an in-memory store behind a small server-only data-access layer. The API route handlers and Server Components both call that layer; Client Components (TanStack Query) call the API over HTTP.
 
 ```
-src/app/api/blogs/blogs.ts        in-memory data store (Record<string, Blog>), plus Blog/RawData types
-src/app/api/blogs/route.ts        GET /api/blogs        -> all blogs
-src/app/api/blogs/[slug]/route.ts GET /api/blogs/:slug   -> one blog, 404 JSON if missing
+src/server/blogs/store.ts          in-memory data store, Record<slug, StoredBlog> (server-only)
+src/server/blogs/query.ts          pure filter -> sort newest-first -> paginate (queryBlogs)
+src/server/blogs/data.ts           listBlogs / getBlogBySlug / listCategories (server-only)
 
-src/app/blog/fetchData.ts         fetchData<T>(url) wrapper -> Result<T> = {ok:true,data} | {ok:false,error}
-src/app/blog/page.tsx             list page: fetches /api/blogs, filters by ?category=, renders category nav
-src/app/blog/[slug]/page.tsx      detail page: fetches /api/blogs/:slug, calls notFound() on failure
-src/app/blog/[slug]/not-found.tsx custom 404 UI for the [slug] segment
-src/app/blog/loading.tsx          route-level loading UI (App Router loading.tsx convention)
-src/app/blog/error.tsx            route-level error boundary ('use client', reset() to retry)
-src/app/blog/_components/         BlogCard, BlogsList — presentational, take typed Blog props
+src/app/api/blogs/listQuery.ts     validates GET /api/blogs query params (400 on invalid)
+src/app/api/blogs/route.ts         GET /api/blogs         -> PaginatedResponse<Blog>
+src/app/api/blogs/[slug]/route.ts  GET /api/blogs/:slug   -> Blog, or 404 { error }
+src/app/api/categories/route.ts    GET /api/categories    -> ListResponse<string>
+
+src/lib/blogs/types.ts             Blog, StoredBlog, RawData, response contracts (shared)
+src/lib/blogs/guards.ts            runtime checks for API JSON (shared)
+src/lib/blogs/urls.ts              URLSearchParams-based builders for /blog and /api/blogs URLs
+src/lib/blogs/searchSync.ts        SearchBar rules: URL (whole query string) vs typed draft, push/replace policy
+src/lib/blogs/queryParams.ts       per-parameter rules shared by the API and the /blog page
+src/lib/blogs/pageParams.ts        validates /blog searchParams (repeats -> invalid, page must be a positive integer)
+
+src/app/blog/utils/fetchData.ts    browser-only fetch -> Result (network | http | parse failures)
+src/app/blog/utils/get*Fn.ts       TanStack Query adapters: validate shape, throw Error with cause
+src/app/blog/page.tsx              list page: validates searchParams (invalid -> error + reset link), renders CategoriesList, SearchBar, PaginatedBlogsList inside SearchDraftProvider
+src/app/blog/[slug]/page.tsx       detail page: getBlogBySlug() directly, notFound() when null
+src/app/blog/[slug]/not-found.tsx  custom 404 UI for the [slug] segment
+src/app/blog/loading.tsx           route-level loading UI (makes /blog/* responses stream)
+src/app/blog/error.tsx             route-level error boundary ('use client', reset() to retry)
+src/app/blog/_components/          BlogCard, BlogsList (presentational); CategoriesList, SearchBar, PaginatedBlogsList (client)
 ```
 
-Two type shapes exist for a blog and the boundary between them matters:
+Type shapes for a blog, and the boundary between them:
 
+- `StoredBlog` — store shape, no `image`.
+- `Blog` — `date` is a `Date`, `image` derived by the data layer.
 - `RawData` — `date` is a `string` (what the API returns as JSON).
-- `Blog` — `date` is a `Date`.
 
-Pages fetch `RawData`, then map `date: new Date(blog.date)` before handing data to components, which are typed against `Blog`. When adding new blog fields or new fetch call sites, preserve this raw-JSON-in / typed-Date-out conversion.
+Server code works with `Blog`. Client adapters receive `unknown` JSON, check it with the guards, then map `date: new Date(blog.date)` before handing data to components typed against `Blog`. When adding blog fields, update the type, the guard and the store together.
 
-`blogs.ts` is a hardcoded in-memory object, not a database — there is no persistence layer yet. Route handlers key directly into it by slug.
+URL rules: build every `/blog` or `/api/blogs` URL with the helpers in `src/lib/blogs/urls.ts` (never string-interpolate query values). The URL is the source of truth for search/category/page; changing a filter keeps the other filter and resets the page. `/blog` searchParams can be `string[]` when repeated: always go through `parseBlogPageParams`, never cast. SearchBar treats any URL change it did not make (compared by whole query string) as superseding the typed draft; a category selection carries the draft via `SearchDraftContext`; link clicks cancel a pending commit.
 
-`fetchData` never throws on a bad HTTP response; it returns `{ok: false, error}`. Callers are responsible for turning that into either `throw new Error(...)` (list page, caught by `error.tsx`) or `notFound()` (detail page, caught by `not-found.tsx`). Keep following whichever convention matches the page you're editing.
+Error policy: a missing blog -> `notFound()`; thrown server errors -> `error.tsx`; an invalid `/blog` URL -> "invalid filters" message with a reset link; a failed list query -> inline message with retry; a failed category query -> retry item inside the menu. `fetchData` returns failures as values; the adapters throw for TanStack Query and keep the failure as `cause`. Queries retry up to 3 times except for HTTP 400 (`shouldRetryQuery`).
 
 ## Conventions
 
-- Path alias `@/*` -> `./src/*` (tsconfig).
-- Styling is Tailwind CSS v4 (CSS-first config, no `tailwind.config.js`); Prettier auto-sorts classes via `prettier-plugin-tailwindcss`.
+- Path alias `@/*` -> `./src/*` (tsconfig; mirrored in `vitest.config.mts`).
+- Modules that import `server-only` (`src/server/**`) must never be imported by Client Components.
+- Styling is Tailwind CSS v4 (CSS-first config, no `tailwind.config.js`); Prettier auto-sorts classes via `prettier-plugin-tailwindcss`. `globals.css` imports `shadcn/tailwind.css`, so the `shadcn` package is a real dependency.
 - Prettier: single quotes, semicolons, 2-space tabs, 80-char print width.
-- ESLint extends `eslint-config-next` (core-web-vitals + typescript) with project overrides in `eslint.config.mjs`: `no-console`, `no-use-before-define`, and `no-shadow` are warnings/errors on top of the Next defaults — don't reintroduce them when editing.
+- ESLint extends `eslint-config-next` (core-web-vitals + typescript) with project overrides in `eslint.config.mjs`: `no-console`, `@typescript-eslint/no-use-before-define`, `@typescript-eslint/no-shadow` and `@typescript-eslint/no-unused-vars` (the TypeScript-aware versions replace the core rules) — don't reintroduce them when editing.
 - Route segments follow App Router file conventions (`page.tsx`, `route.ts`, `loading.tsx`, `error.tsx`, `not-found.tsx`); private component folders are prefixed with `_` (e.g. `_components/`) so Next.js doesn't treat them as routes.
 
 ## Working Mode — Read This First

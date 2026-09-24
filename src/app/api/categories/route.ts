@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import blogs, { SentRawData } from '@/app/api/blogs/blogs';
+import { listCategories } from '@/server/blogs/data';
+import type { ListResponse } from '@/lib/blogs/types';
 
-export function GET() {
-  const categoriesArray = [
-    ...new Set(Object.values(blogs).map((blog) => blog.category)),
-  ];
+export async function GET() {
+  const categories = await listCategories();
 
-  return NextResponse.json<SentRawData<string[]>>({ data: categoriesArray });
+  return NextResponse.json<ListResponse<string>>({ data: categories });
 }

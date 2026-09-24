@@ -1,29 +1,9 @@
-export interface Blog {
-  title: string;
-  slug: string;
-  date: Date;
-  content: string;
-  category: string;
-  image: string;
-}
+import 'server-only';
+import type { StoredBlog } from '@/lib/blogs/types';
 
-export interface RawData {
-  title: string;
-  slug: string;
-  date: string;
-  content: string;
-  category: string;
-  image: string;
-}
-
-export interface SentRawData<T> {
-  data: T;
-  meta?: { total: number; page: number; limit: number; hasNextPage: boolean };
-}
-
-type BlogOmit = Omit<Blog, 'image'>;
-
-const blogs: Record<string, BlogOmit> = {
+// In-memory data store (no database yet). Server-only: read it through
+// `src/server/blogs/data.ts`, never import it into Client Components.
+const blogs: Record<string, StoredBlog> = {
   'first-blog': {
     title: 'typescript mastery',
     slug: 'first-blog',

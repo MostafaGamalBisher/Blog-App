@@ -8,10 +8,16 @@ const eslintConfig = defineConfig([
   {
     rules: {
       // Variables
-      'no-unused-vars': 'warn',
+      // The core rules don't understand TypeScript (types, overloads,
+      // enums) and report false positives, so use the typescript-eslint
+      // versions instead and turn the core ones off.
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'warn',
       'no-undef': 'off',
-      'no-use-before-define': 'error',
-      'no-shadow': 'warn',
+      'no-use-before-define': 'off',
+      '@typescript-eslint/no-use-before-define': 'error',
+      'no-shadow': 'off',
+      '@typescript-eslint/no-shadow': 'warn',
 
       // Code quality
       eqeqeq: 'error',

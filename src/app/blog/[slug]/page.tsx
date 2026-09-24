@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
-import { fetchData } from '@/app/blog/utils/fetchData';
-import { RawData } from '@/app/api/blogs/blogs';
+import { getBlogBySlug } from '@/server/blogs/data';
 import Image from 'next/image';
 import { Code } from 'lucide-react';
 
@@ -11,16 +10,14 @@ interface BlogPageProps {
 export default async function BlogPage({ params }: BlogPageProps) {
   const { slug } = await params;
 
-  const result = await fetchData<RawData>(`/api/blogs/${slug}`);
+  // Read the data directly on the server (no HTTP call to our own API).
+  // Only a missing blog becomes a 404; any thrown error is an operational
+  // failure and is handled by the route's error.tsx boundary.
+  const blog = await getBlogBySlug(slug);
 
-  if (!result.ok) {
+  if (blog === null) {
     notFound();
   }
-
-  const blog = {
-    ...result.data,
-    date: new Date(result.data.date),
-  };
 
   return (
     <div className="flex flex-col items-start gap-6 p-4 md:items-center">
