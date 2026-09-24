@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import blogs, { Blog } from '@/app/api/blogs/blogs';
+import { getBlogBySlug } from '@/server/blogs/data';
+import type { ApiErrorResponse, Blog } from '@/lib/blogs/types';
 
 interface RouteParams {
   params: Promise<{ slug: string }>;
@@ -8,16 +9,14 @@ interface RouteParams {
 export async function GET(request: Request, { params }: RouteParams) {
   const { slug } = await params;
 
-  const blog = blogs[slug];
+  const blog = await getBlogBySlug(slug);
 
-  if (blog === undefined) {
-    return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
+  if (blog === null) {
+    return NextResponse.json<ApiErrorResponse>(
+      { error: 'Blog not found' },
+      { status: 404 }
+    );
   }
 
-  const blogWithImage = {
-    ...blog,
-    image: `https://placehold.co/600x400.png?text=${blog.slug}`,
-  };
-
-  return NextResponse.json<Blog>(blogWithImage);
+  return NextResponse.json<Blog>(blog);
 }

@@ -1,14 +1,20 @@
-import { SentRawData } from '@/app/api/blogs/blogs';
-import { fetchData } from '@/app/blog/utils/fetchData';
+import { isStringList } from '@/lib/blogs/guards';
+import { describeFetchError, fetchData } from '@/app/blog/utils/fetchData';
 
-export async function getCategoriesFn() {
-  const result = await fetchData<SentRawData<string[]>>(`/api/categories`);
+// TanStack Query function: throws on failure, keeping the FetchError as `cause`.
+export async function getCategoriesFn(): Promise<string[]> {
+  const result = await fetchData('/api/categories');
 
   if (!result.ok) {
-    throw new Error(`Failed to fetch categories`);
+    throw new Error(
+      `Failed to load categories (${describeFetchError(result.error)})`,
+      { cause: result.error }
+    );
   }
 
-  const categoriesArray = result.data.data;
+  if (!isStringList(result.data)) {
+    throw new Error('Failed to load categories (unexpected response shape)');
+  }
 
-  return categoriesArray;
+  return result.data.data;
 }

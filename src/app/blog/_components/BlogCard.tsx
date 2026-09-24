@@ -1,4 +1,4 @@
-import { Blog } from '@/app/api/blogs/blogs';
+import type { Blog } from '@/lib/blogs/types';
 import { Code } from 'lucide-react';
 import Image from 'next/image';
 
