@@ -16,6 +16,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { getCategoriesFn } from '@/app/blog/utils/getCategoriesFn';
 import { updateBlogListHref } from '@/lib/blogs/urls';
+import { usePendingSearchRef } from '@/app/blog/_components/SearchDraftContext';
 
 interface categoryPropsType {
   categoryProps: string;
@@ -29,14 +30,21 @@ export function CategoriesList({ categoryProps }: categoryPropsType) {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pendingSearchRef = usePendingSearchRef();
 
-  // Changing the category keeps the current search and returns to page 1.
-  // "all categories" removes only the category filter.
+  // Changing the category keeps the search and returns to page 1.
+  // "all categories" removes only the category filter. The search used is
+  // what is in the search box right now, including text still waiting for
+  // its debounce, so typing and then quickly choosing a category applies both.
   const categoryHandler = (selectedCategory: string) => {
+    const pendingSearch = pendingSearchRef.current;
     router.push(
       updateBlogListHref(searchParams, {
         category:
           selectedCategory === 'all categories' ? null : selectedCategory,
+        ...(pendingSearch && {
+          search: pendingSearch.takeDraft().trim() || null,
+        }),
       })
     );
   };

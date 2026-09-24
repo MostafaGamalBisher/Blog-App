@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CategoriesList } from '@/app/blog/_components/CategoriesList';
 import { PaginatedBlogsList } from '@/app/blog/_components/PaginatedBlogsList';
 import { SearchBar } from '@/app/blog/_components/SearchBar';
+import { SearchDraftProvider } from '@/app/blog/_components/SearchDraftContext';
 import {
   parseBlogPageParams,
   type RawSearchParams,
@@ -36,13 +37,15 @@ export default async function BlogListPage({
   const categoryProps: string = category ?? 'all categories';
 
   return (
-    <div className="flex flex-col items-center justify-start">
-      <div className="flex gap-4">
-        <CategoriesList categoryProps={categoryProps} />
-        <SearchBar />
-      </div>
+    <SearchDraftProvider>
+      <div className="flex flex-col items-center justify-start">
+        <div className="flex gap-4">
+          <CategoriesList categoryProps={categoryProps} />
+          <SearchBar />
+        </div>
 
-      <PaginatedBlogsList page={page} category={category} search={search} />
-    </div>
+        <PaginatedBlogsList page={page} category={category} search={search} />
+      </div>
+    </SearchDraftProvider>
   );
 }
