@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchData } from '@/app/blog/utils/fetchData';
+import { fetchData, shouldRetryQuery } from '@/app/blog/utils/fetchData';
 import { getBlogsFn } from '@/app/blog/utils/getBlogsFn';
 import { getCategoriesFn } from '@/app/blog/utils/getCategoriesFn';
 
@@ -147,5 +147,35 @@ describe('getCategoriesFn', () => {
     await expect(getCategoriesFn()).rejects.toThrow(
       'unexpected response shape'
     );
+  });
+});
+
+describe('shouldRetryQuery', () => {
+  const withCause = (cause: unknown) => new Error('failed', { cause });
+
+  it('does not retry a 400 validation error', () => {
+    const error = withCause({ kind: 'http', status: 400, message: 'bad' });
+    expect(shouldRetryQuery(0, error)).toBe(false);
+  });
+
+  it.each([
+    ['network', { kind: 'network', message: 'offline' }],
+    ['500', { kind: 'http', status: 500, message: 'boom' }],
+    ['408 timeout', { kind: 'http', status: 408, message: 'timeout' }],
+    ['429 rate limit', { kind: 'http', status: 429, message: 'slow down' }],
+    ['parse', { kind: 'parse', status: 200, message: 'bad json' }],
+    ['no cause', undefined],
+  ])('retries %s up to 3 times', (_label, cause) => {
+    const error = withCause(cause);
+    expect(shouldRetryQuery(0, error)).toBe(true);
+    expect(shouldRetryQuery(2, error)).toBe(true);
+    expect(shouldRetryQuery(3, error)).toBe(false);
+  });
+
+  it('reads the structured cause, not the message text', () => {
+    const error = new Error('http 400: looks like a validation error', {
+      cause: { kind: 'http', status: 503, message: 'unavailable' },
+    });
+    expect(shouldRetryQuery(0, error)).toBe(true);
   });
 });

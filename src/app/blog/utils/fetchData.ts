@@ -75,3 +75,22 @@ export function describeFetchError(error: FetchError): string {
   const status = error.kind === 'network' ? '' : ` ${error.status}`;
   return `${error.kind}${status}: ${error.message}`;
 }
+
+const MAX_QUERY_RETRIES = 3;
+
+// TanStack Query retry policy. A 400 means the request itself was rejected
+// by validation, so sending it again cannot succeed: show the error at once.
+// Everything else (network errors, 5xx, and 4xx statuses that can be
+// temporary, such as 408 or 429) keeps the default of 3 retries.
+// Reads the structured failure kept as the error's `cause`, not its message.
+export function shouldRetryQuery(failureCount: number, error: Error): boolean {
+  const cause: unknown = error.cause;
+  const isValidationError =
+    typeof cause === 'object' &&
+    cause !== null &&
+    'kind' in cause &&
+    cause.kind === 'http' &&
+    'status' in cause &&
+    cause.status === 400;
+  return !isValidationError && failureCount < MAX_QUERY_RETRIES;
+}
