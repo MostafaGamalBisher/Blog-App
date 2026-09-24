@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { blogListHref } from '@/lib/blogs/urls';
 
 interface PaginatedBlogsListProps {
-  page?: string;
+  page: number;
   category?: string;
   search?: string;
 }

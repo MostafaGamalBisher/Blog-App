@@ -6,7 +6,7 @@ import { describeFetchError, fetchData } from '@/app/blog/utils/fetchData';
 // TanStack Query function: throws on failure (that is how useQuery learns
 // about errors). The original FetchError is kept as the error's `cause`.
 export async function getBlogsFn(
-  filters: BlogListFilters & { page?: string }
+  filters: BlogListFilters & { page?: number }
 ): Promise<PaginatedResponse<Blog>> {
   const result = await fetchData(blogsApiPath(filters));
 

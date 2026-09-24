@@ -35,15 +35,14 @@ export function blogListHref({
   return withQuery('/blog', params);
 }
 
-// Path for GET /api/blogs as requested by the list page. `page` is passed
-// through as it appears in the page URL; the API validates it.
+// Path for GET /api/blogs as requested by the list page.
 export function blogsApiPath({
   category,
   search,
   page,
-}: BlogListFilters & { page?: string }): string {
+}: BlogListFilters & { page?: number }): string {
   const params = new URLSearchParams();
-  params.set('page', page ?? '1');
+  params.set('page', String(page ?? 1));
   params.set('limit', String(BLOGS_PAGE_SIZE));
   setIfPresent(params, 'category', category);
   setIfPresent(params, 'search', search);
@@ -53,10 +52,10 @@ export function blogsApiPath({
 // Changes filters on the current /blog URL. A string sets the filter,
 // `null` or '' removes it, and filters not mentioned are kept as they are.
 // Any filter change goes back to page 1.
-export function updateBlogListHref(
+export function updateBlogListParams(
   current: URLSearchParams,
   changes: { category?: string | null; search?: string | null }
-): string {
+): URLSearchParams {
   const params = new URLSearchParams(current.toString());
   for (const [key, value] of Object.entries(changes)) {
     if (value === undefined) {
@@ -69,5 +68,13 @@ export function updateBlogListHref(
     }
   }
   params.delete('page');
-  return withQuery('/blog', params);
+  return params;
+}
+
+// Same as updateBlogListParams, as an href.
+export function updateBlogListHref(
+  current: URLSearchParams,
+  changes: { category?: string | null; search?: string | null }
+): string {
+  return withQuery('/blog', updateBlogListParams(current, changes));
 }

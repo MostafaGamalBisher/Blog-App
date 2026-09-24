@@ -52,7 +52,7 @@ describe('blogListHref', () => {
 
 describe('blogsApiPath', () => {
   it.each(LITERAL_SEARCHES)('sends search %j literally', (search) => {
-    const params = paramsOf(blogsApiPath({ search, page: '3' }));
+    const params = paramsOf(blogsApiPath({ search, page: 3 }));
     expect(params.get('search')).toBe(search);
     expect(params.get('page')).toBe('3');
     expect(params.get('limit')).toBe('10');

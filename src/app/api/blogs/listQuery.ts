@@ -1,4 +1,9 @@
 import type { BlogListQuery } from '@/server/blogs/query';
+import {
+  optionalFilter,
+  positiveInteger,
+  type Parsed,
+} from '@/lib/blogs/queryParams';
 
 // Validation rules for GET /api/blogs query parameters.
 //
@@ -13,57 +18,22 @@ import type { BlogListQuery } from '@/server/blogs/query';
 // Any parameter above given more than once -> invalid.
 //
 // Invalid input is rejected with a 400; values are never silently adjusted.
+// The per-parameter rules live in src/lib/blogs/queryParams.ts and are shared
+// with the /blog page.
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_LIMIT = 1;
 export const MAX_LIMIT = 100;
 
-type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
-
-const PLAIN_POSITIVE_INTEGER = /^[1-9][0-9]*$/;
-
-function singleValue(
-  params: URLSearchParams,
-  key: string
-): Parsed<string | undefined> {
-  const values = params.getAll(key);
-  if (values.length > 1) {
-    return { ok: false, error: `${key} must not be repeated` };
-  }
-  return { ok: true, value: values[0] };
-}
-
-function positiveInteger(
-  params: URLSearchParams,
-  key: string,
-  fallback: number
-): Parsed<number> {
-  const raw = singleValue(params, key);
-  if (!raw.ok) {
-    return raw;
-  }
-  if (raw.value === undefined) {
-    return { ok: true, value: fallback };
-  }
-  if (!PLAIN_POSITIVE_INTEGER.test(raw.value)) {
-    return { ok: false, error: `${key} must be a positive integer` };
-  }
-  const value = Number(raw.value);
-  if (!Number.isSafeInteger(value)) {
-    return { ok: false, error: `${key} is too large` };
-  }
-  return { ok: true, value };
-}
-
 export function parseBlogListQuery(
   params: URLSearchParams
 ): Parsed<BlogListQuery> {
-  const page = positiveInteger(params, 'page', DEFAULT_PAGE);
+  const page = positiveInteger('page', params.getAll('page'), DEFAULT_PAGE);
   if (!page.ok) {
     return page;
   }
 
-  const limit = positiveInteger(params, 'limit', DEFAULT_LIMIT);
+  const limit = positiveInteger('limit', params.getAll('limit'), DEFAULT_LIMIT);
   if (!limit.ok) {
     return limit;
   }
@@ -71,12 +41,12 @@ export function parseBlogListQuery(
     return { ok: false, error: `limit must not be greater than ${MAX_LIMIT}` };
   }
 
-  const category = singleValue(params, 'category');
+  const category = optionalFilter('category', params.getAll('category'));
   if (!category.ok) {
     return category;
   }
 
-  const search = singleValue(params, 'search');
+  const search = optionalFilter('search', params.getAll('search'));
   if (!search.ok) {
     return search;
   }
@@ -86,7 +56,7 @@ export function parseBlogListQuery(
     value: {
       page: page.value,
       limit: limit.value,
-      category: category.value || undefined,
+      category: category.value,
       search: search.value?.trim() || undefined,
     },
   };
